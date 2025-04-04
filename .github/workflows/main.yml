@@ -1,0 +1,47 @@
+name: .NET CI Security Bot
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  DOTNET_VERSION: '6.0.x'  # Matches your project's .NET version
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest  # Required for System.Media.SoundPlayer
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Test (if you add tests later)
+      run: dotnet test --no-build --verbosity normal
+
+    - name: Verify assets
+      run: |
+        if not exist "Assets\greeting.wav" (echo "Missing audio file" && exit 1)
+        if not exist "Assets\ascii_art.txt" (echo "Missing ASCII art file" && exit 1)
+        echo "All required assets present"
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-bot-build
+        path: |
+          bin\Release\net6.0\
+          Assets\
